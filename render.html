@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Comic Book Studio Render</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #08090d;
+        font-family: "Microsoft YaHei", "Noto Sans CJK SC", Arial, sans-serif;
+      }
+
+      #stage {
+        position: fixed;
+        inset: 0;
+      }
+
+    </style>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="stage"></div>
+    <script type="module" src="/render.js"></script>
+  </body>
+</html>

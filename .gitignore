@@ -1,0 +1,16 @@
+node_modules/
+__pycache__/
+.DS_Store
+Thumbs.db
+*.log
+
+# Generated frames are reproducible and too large for Git.
+frames/
+
+# Keep the checked-in demo render, ignore other local render outputs.
+output/*
+!output/
+!output/starlight_courier_baked_kaiti.mp4
+
+# Temporary audio intermediates from experiments.
+assets/audio/_temp_*.wav

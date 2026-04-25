@@ -1,0 +1,36 @@
+{
+  "tts": "edge-tts",
+  "voice": "zh-CN-XiaoxiaoNeural",
+  "entries": [
+    {
+      "file": "edge_voice_01.mp3",
+      "text": "雨后的旧城街角，小岚和豆豆捡到一封会发光的银色信。",
+      "start": 0.45,
+      "voice": "zh-CN-XiaoxiaoNeural"
+    },
+    {
+      "file": "edge_voice_02.mp3",
+      "text": "信封展开，一张星图在阁楼里亮了起来。",
+      "start": 6.65,
+      "voice": "zh-CN-XiaoxiaoNeural"
+    },
+    {
+      "file": "edge_voice_03.mp3",
+      "text": "银色信纸折成小船，载着他们沿星光飞过屋顶。",
+      "start": 13.05,
+      "voice": "zh-CN-XiaoxiaoNeural"
+    },
+    {
+      "file": "edge_voice_04.mp3",
+      "text": "乌云深处，一颗迷路的小星星被雨线缠住了。",
+      "start": 19.45,
+      "voice": "zh-CN-XiaoxiaoNeural"
+    },
+    {
+      "file": "edge_voice_05.mp3",
+      "text": "清晨，小星星回到天空，雨滴也变成了闪光的告别。",
+      "start": 25.85,
+      "voice": "zh-CN-XiaoxiaoNeural"
+    }
+  ]
+}

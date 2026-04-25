@@ -1,0 +1,65 @@
+{
+  "title": "Starlight Courier",
+  "fps": 24,
+  "width": 1920,
+  "height": 1080,
+  "totalDuration": 32,
+  "transitionDuration": 0.9,
+  "pages": [
+    {
+      "image": "assets/images/page_01.png",
+      "start": 0,
+      "end": 6.4,
+      "caption": "雨后的旧城街角，小岚和豆豆捡到一封会发光的银色信。",
+      "focus": { "x0": -0.05, "y0": -0.02, "x1": 0.02, "y1": 0.03, "scale0": 0.96, "scale1": 1.05 },
+      "bubbles": [
+        { "text": "豆豆，你看！\n这封信在发光。", "x": 0.58, "y": 0.18, "w": 330, "tail": "down-left" },
+        { "text": "检测到\n星光信号！", "x": 0.72, "y": 0.50, "w": 250, "tail": "down-left", "tone": "robot" }
+      ]
+    },
+    {
+      "image": "assets/images/page_02.png",
+      "start": 6.4,
+      "end": 12.8,
+      "caption": "信封展开，一张星图在阁楼里亮了起来。",
+      "focus": { "x0": 0.03, "y0": 0.02, "x1": -0.02, "y1": -0.02, "scale0": 0.98, "scale1": 1.08 },
+      "bubbles": [
+        { "text": "它在指路……", "x": 0.22, "y": 0.12, "w": 250, "tail": "down-right" },
+        { "text": "目标在\n云层上方。", "x": 0.78, "y": 0.20, "w": 270, "tail": "down-left", "tone": "robot" }
+      ]
+    },
+    {
+      "image": "assets/images/page_03.png",
+      "start": 12.8,
+      "end": 19.2,
+      "caption": "银色信纸折成小船，载着他们沿星光飞过屋顶。",
+      "focus": { "x0": -0.03, "y0": -0.02, "x1": 0.05, "y1": 0.03, "scale0": 0.95, "scale1": 1.06 },
+      "bubbles": [
+        { "text": "抓紧啦，\n我们出发！", "x": 0.22, "y": 0.10, "w": 300, "tail": "down-right" },
+        { "text": "飞行模式\n启动！", "x": 0.62, "y": 0.12, "w": 250, "tail": "down-left", "tone": "robot" }
+      ]
+    },
+    {
+      "image": "assets/images/page_04.png",
+      "start": 19.2,
+      "end": 25.6,
+      "caption": "乌云深处，一颗迷路的小星星被雨线缠住了。",
+      "focus": { "x0": 0.05, "y0": 0.03, "x1": -0.04, "y1": 0.0, "scale0": 0.99, "scale1": 1.12 },
+      "bubbles": [
+        { "text": "我找不到\n回家的路……", "x": 0.77, "y": 0.16, "w": 310, "tail": "down-left", "tone": "star" },
+        { "text": "别怕，\n我们帮你。", "x": 0.25, "y": 0.13, "w": 270, "tail": "down-right" }
+      ]
+    },
+    {
+      "image": "assets/images/page_05.png",
+      "start": 25.6,
+      "end": 32,
+      "caption": "清晨，小星星回到天空，雨滴也变成了闪光的告别。",
+      "focus": { "x0": -0.02, "y0": 0.0, "x1": 0.02, "y1": 0.03, "scale0": 0.96, "scale1": 1.05 },
+      "bubbles": [
+        { "text": "谢谢你们！", "x": 0.61, "y": 0.14, "w": 260, "tail": "down-right", "tone": "star" },
+        { "text": "任务完成！", "x": 0.45, "y": 0.42, "w": 250, "tail": "down-left", "tone": "robot" }
+      ]
+    }
+  ]
+}
