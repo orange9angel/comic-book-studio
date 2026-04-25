@@ -14,3 +14,9 @@ output/*
 
 # Temporary audio intermediates from experiments.
 assets/audio/_temp_*.wav
+assets/audio/voice_*.mp3
+assets/audio/dialogue_edge.wav
+assets/audio/mixed.wav
+assets/audio/sfx.wav
+assets/audio/page_flip.wav
+assets/audio/edge_manifest.json

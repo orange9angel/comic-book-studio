@@ -1,0 +1,46 @@
+{
+  "_comment": "角色声音配置：每个角色有独立的 voice/rate/pitch/volume，以及 emotion 到参数偏移的映射。不使用 SSML mstts:express-as（edge-tts 不支持），通过 rate/pitch/volume 组合模拟情感。",
+  "roles": {
+    "旁白": {
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "volume": "+0%",
+      "description": "沉稳叙事男声"
+    },
+    "小岚": {
+      "voice": "zh-CN-XiaoyiNeural",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "volume": "+0%",
+      "description": "活泼好奇女童声"
+    },
+    "豆豆": {
+      "voice": "zh-CN-YunjianNeural",
+      "rate": "+5%",
+      "pitch": "+8Hz",
+      "volume": "+5%",
+      "description": "机械感男声，稍快稍高"
+    },
+    "小星星": {
+      "voice": "zh-CN-XiaoxiaoNeural",
+      "rate": "-5%",
+      "pitch": "+5Hz",
+      "volume": "-5%",
+      "description": "温柔梦幻女声，稍慢"
+    }
+  },
+  "emotion_map": {
+    "neutral":    { "rate_offset": "+0%",  "pitch_offset": "+0Hz",  "volume_offset": "+0%" },
+    "cheerful":   { "rate_offset": "+5%",  "pitch_offset": "+3Hz",  "volume_offset": "+3%" },
+    "excited":    { "rate_offset": "+10%", "pitch_offset": "+6Hz",  "volume_offset": "+5%" },
+    "surprised":  { "rate_offset": "+8%",  "pitch_offset": "+8Hz",  "volume_offset": "+5%" },
+    "curious":    { "rate_offset": "+3%",  "pitch_offset": "+4Hz",  "volume_offset": "+2%" },
+    "friendly":   { "rate_offset": "+0%",  "pitch_offset": "+2Hz",  "volume_offset": "+2%" },
+    "sad":        { "rate_offset": "-8%",  "pitch_offset": "-5Hz",  "volume_offset": "-8%" },
+    "angry":      { "rate_offset": "+5%",  "pitch_offset": "+5Hz",  "volume_offset": "+8%" },
+    "terrified":  { "rate_offset": "+12%", "pitch_offset": "+10Hz", "volume_offset": "+5%" },
+    "whispering": { "rate_offset": "-10%", "pitch_offset": "-3Hz",  "volume_offset": "-15%" },
+    "shouting":   { "rate_offset": "+8%",  "pitch_offset": "+8Hz",  "volume_offset": "+10%" }
+  }
+}
