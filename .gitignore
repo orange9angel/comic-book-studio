@@ -6,17 +6,22 @@ Thumbs.db
 
 # Generated frames are reproducible and too large for Git.
 frames/
+episodes/*/frames/
 
-# Keep the checked-in demo render, ignore other local render outputs.
-output/*
-!output/
-!output/starlight_courier_baked_kaiti.mp4
+# Render outputs
+output/
+episodes/*/output/
 
-# Temporary audio intermediates from experiments.
+# Generated audio assets
 assets/audio/_temp_*.wav
 assets/audio/voice_*.mp3
-assets/audio/dialogue_edge.wav
+assets/audio/dialogue_*.wav
 assets/audio/mixed.wav
 assets/audio/sfx.wav
 assets/audio/page_flip.wav
 assets/audio/edge_manifest.json
+assets/audio/bgm.wav
+episodes/*/assets/audio/
+
+# Temporary files
+.inspect_tmp.html

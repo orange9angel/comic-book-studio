@@ -1,0 +1,80 @@
+{
+  "title": "夸父逐日",
+  "fps": 24,
+  "width": 1920,
+  "height": 1080,
+  "totalDuration": 50,
+  "transitionDuration": 0.9,
+  "pages": [
+    {
+      "image": "assets/images/page_01.png",
+      "start": 0,
+      "end": 10.0,
+      "caption": "在华夏神话的苍茫版图上，一位巨人的身影矗立于大地与苍穹之间。他名夸父，幽冥神的后裔。某日，他凝视那轮不可触碰的烈阳，做出了一个将改写山川的决定。",
+      "focus": { "x0": -0.02, "y0": -0.03, "x1": 0.03, "y1": 0.02, "scale0": 0.95, "scale1": 1.04 },
+      "bubbles": [
+        {
+          "text": "我要追上太阳。\n让光明永驻人间。",
+          "x": 0.52, "y": 0.16, "w": 340, "tail": "down-right",
+          "speaker": "夸父", "emotion": "determined"
+        }
+      ]
+    },
+    {
+      "image": "assets/images/page_02.png",
+      "start": 10.0,
+      "end": 20.0,
+      "caption": "他的脚步撼动大地，扬尘如龙。太阳向西疾驰，夸父向西追逐。这是一场人与天光的角力，一次对极限的庄严挑战。",
+      "focus": { "x0": 0.03, "y0": 0.02, "x1": -0.03, "y1": -0.02, "scale0": 0.97, "scale1": 1.06 },
+      "bubbles": [
+        {
+          "text": "还差一点……\n就快到了。",
+          "x": 0.72, "y": 0.18, "w": 280, "tail": "down-left",
+          "speaker": "夸父", "emotion": "strained"
+        }
+      ]
+    },
+    {
+      "image": "assets/images/page_03.png",
+      "start": 20.0,
+      "end": 30.0,
+      "caption": "万里奔袭之后，焦渴如焚。黄河与渭水在他面前铺展，两条母亲河竟被这位巨人一饮而尽。然而，干渴并未离去。",
+      "focus": { "x0": -0.03, "y0": -0.02, "x1": 0.02, "y1": 0.03, "scale0": 0.96, "scale1": 1.05 },
+      "bubbles": [
+        {
+          "text": "不够……\n还是不够……",
+          "x": 0.76, "y": 0.48, "w": 260, "tail": "down-left",
+          "speaker": "夸父", "emotion": "anguished"
+        }
+      ]
+    },
+    {
+      "image": "assets/images/page_04.png",
+      "start": 30.0,
+      "end": 40.0,
+      "caption": "在太阳即将沉入虞渊之际，夸父的身躯终于触及了大地。他的手杖脱手而出，滚落在苍茫的山脊之上。追逐结束了，但故事才刚刚开始。",
+      "focus": { "x0": 0.02, "y0": 0.03, "x1": -0.02, "y1": -0.03, "scale0": 0.94, "scale1": 1.07 },
+      "bubbles": [
+        {
+          "text": "太阳……\n我追不上你了……",
+          "x": 0.55, "y": 0.15, "w": 320, "tail": "down-right",
+          "speaker": "夸父", "emotion": "fading"
+        }
+      ]
+    },
+    {
+      "image": "assets/images/page_05.png",
+      "start": 40.0,
+      "end": 50.0,
+      "caption": "这位巨人并未真正离去。他的身躯化为连绵的山脉，手杖生根发芽，化作千里桃林。每逢春日，粉红的花瓣随风飞舞——那是大地在纪念这场壮烈的追逐。",
+      "focus": { "x0": -0.02, "y0": -0.02, "x1": 0.03, "y1": 0.02, "scale0": 0.95, "scale1": 1.06 },
+      "bubbles": [
+        {
+          "text": "夸父没有倒下，\n他化作了春天本身。",
+          "x": 0.70, "y": 0.20, "w": 350, "tail": "down-left",
+          "speaker": "旁白", "emotion": "reverent"
+        }
+      ]
+    }
+  ]
+}

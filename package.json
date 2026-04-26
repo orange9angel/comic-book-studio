@@ -7,7 +7,9 @@
     "render": "node render_frames.mjs",
     "render:sample": "node render_frames.mjs --sample=8,14,21",
     "audio": "python build_audio_edge.py",
-    "mux": "ffmpeg -y -framerate 24 -i ./frames/frame_%05d.png -i ./assets/audio/mixed.wav -c:v libx264 -pix_fmt yuv420p -c:a aac -b:a 192k -shortest ./output/starlight_courier_baked_kaiti.mp4"
+    "mux": "node mux.js",
+    "build": "npm run audio && npm run render && npm run mux",
+    "inspect": "node inspect.js"
   },
   "keywords": [
     "comic-book",

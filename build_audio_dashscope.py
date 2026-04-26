@@ -1,39 +1,64 @@
 #!/usr/bin/env python3
 """
-Comic Book Studio — 多角色情感配音生成器
+Comic Book Studio — 阿里云 DashScope TTS 配音生成器
 
-功能：
-- 读取 story.json 中的旁白和角色对白
-- 根据 voice_config.json 为每个角色分配独立声音
-- 通过 rate/pitch/volume 参数组合模拟情感变化
+Features:
+- 使用阿里云 DashScope Sambert API 生成高质量中文 TTS
+- 中文效果自然流畅
+- API 失败时自动回退到 edge-tts
 - 生成 TTS、翻页音效、BGM 并混音为最终音频
 
-注意：edge-tts 不支持 SSML mstts:express-as 情感标签（会自动转义），
-      因此通过调整 rate/pitch/volume 参数来实现情感效果。
+Usage:
+    1. 从 https://dashscope.console.aliyun.com/ 获取 API Key
+    2. 设置环境变量: $env:DASHSCOPE_API_KEY="sk-xxx"
+    3. 运行: python build_audio_dashscope.py
 
-依赖：edge-tts, ffmpeg
+推荐声音预设（Sambert 模型）：
+    - 小岚    : zhimao-v1    (知猫 — 活泼女童声)
+    - 豆豆    : zhishuo-v1   (知硕 — 年轻男声)
+    - 小星星  : zhixia-v1    (知夏 — 温柔女声)
+    - 旁白    : zhishuo-v1   (知硕 — 沉稳男声)
 """
 import asyncio
 import json
-import re
+import os
 import subprocess
-import sys
 from pathlib import Path
 
+import dashscope
 import edge_tts
 
-# 解析 --episode 参数
-episode = ""
-for arg in sys.argv[1:]:
-    if arg.startswith("--episode="):
-        episode = arg[len("--episode="):]
-        break
-
 ROOT = Path(__file__).resolve().parent
-if episode:
-    ROOT = ROOT / episode
 AUDIO_DIR = ROOT / "assets" / "audio"
 AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
+DASHSCOPE_API_KEY = os.environ.get("DASHSCOPE_API_KEY", "")
+if DASHSCOPE_API_KEY:
+    dashscope.api_key = DASHSCOPE_API_KEY
+
+# Sambert 预设声音映射
+DASHSCOPE_PRESETS = {
+    "小岚": {
+        "model": "sambert-zhimao-v1",    # 知猫 — 活泼女童声
+    },
+    "豆豆": {
+        "model": "sambert-zhishuo-v1",   # 知硕 — 年轻男声
+    },
+    "小星星": {
+        "model": "sambert-zhixia-v1",    # 知夏 — 温柔女声
+    },
+    "旁白": {
+        "model": "sambert-zhishuo-v1",   # 知硕 — 沉稳男声
+    },
+}
+
+# 回退 edge-tts 配置
+EDGE_VOICE_MAP = {
+    "小岚": {"voice": "zh-CN-XiaoyiNeural", "rate": "+0%", "pitch": "+0Hz", "volume": "+0%"},
+    "豆豆": {"voice": "zh-CN-YunjianNeural", "rate": "+5%", "pitch": "+8Hz", "volume": "+5%"},
+    "小星星": {"voice": "zh-CN-XiaoxiaoNeural", "rate": "-5%", "pitch": "+5Hz", "volume": "-5%"},
+    "旁白": {"voice": "zh-CN-YunxiNeural", "rate": "+0%", "pitch": "+0Hz", "volume": "+0%"},
+}
 
 
 def run(cmd):
@@ -41,74 +66,64 @@ def run(cmd):
     subprocess.run(cmd, check=True)
 
 
-def parse_percent(val: str) -> int:
-    """解析百分比字符串如 '+10%' '-5%' 为整数。"""
-    m = re.match(r"([+-]?\d+)%", val)
-    return int(m.group(1)) if m else 0
-
-
-def parse_hz(val: str) -> int:
-    """解析赫兹字符串如 '+10Hz' '-5Hz' 为整数。"""
-    m = re.match(r"([+-]?\d+)Hz", val, re.IGNORECASE)
-    return int(m.group(1)) if m else 0
-
-
-def combine_percent(base: str, offset: str) -> str:
-    """合并两个百分比，如 '+5%' + '+3%' = '+8%'。"""
-    total = parse_percent(base) + parse_percent(offset)
-    sign = "+" if total >= 0 else ""
-    return f"{sign}{total}%"
-
-
-def combine_hz(base: str, offset: str) -> str:
-    """合并两个赫兹值，如 '+5Hz' + '+3Hz' = '+8Hz'。"""
-    total = parse_hz(base) + parse_hz(offset)
-    sign = "+" if total >= 0 else ""
-    return f"{sign}{total}Hz"
-
-
 def load_story_and_config():
     """加载 story.json 和 voice_config.json。"""
     story_path = ROOT / "story.json"
     config_path = ROOT / "voice_config.json"
-
-    if not story_path.exists():
-        raise FileNotFoundError(f"story.json not found: {story_path}")
-    if not config_path.exists():
-        raise FileNotFoundError(f"voice_config.json not found: {config_path}")
-
     story = json.loads(story_path.read_text(encoding="utf-8"))
     config = json.loads(config_path.read_text(encoding="utf-8"))
-
     return story, config
 
 
-def estimate_duration(text: str, rate: str) -> float:
-    """粗略估计语音时长（秒）。中文字符约 0.25s/字，rate 影响实际速度。"""
-    # 统计中文字符数（不含标点和空白）
-    char_count = sum(1 for c in text if '\u4e00' <= c <= '\u9fff')
-    # 基础时长
-    base = max(1.0, char_count * 0.28)
-    # rate 调整：+10% rate 表示快 10%，时长缩短
-    rate_pct = parse_percent(rate)
-    adjusted = base / (1 + rate_pct / 100)
-    return adjusted
+def generate_with_dashscope(text, model, output_path):
+    """调用 DashScope Sambert API。成功返回 True，失败返回 False。"""
+    if not DASHSCOPE_API_KEY:
+        return False
+    try:
+        from dashscope.audio.tts import SpeechSynthesizer
+
+        result = SpeechSynthesizer.call(
+            model=model,
+            text=text,
+            sample_rate=48000,
+        )
+        if result.get_audio_data():
+            with open(output_path, "wb") as f:
+                f.write(result.get_audio_data())
+            return True
+        else:
+            print(f"    DashScope 返回空音频")
+            return False
+    except Exception as e:
+        print(f"    DashScope 失败: {e}")
+        return False
+
+
+async def generate_with_edgetts(text, voice, rate, pitch, volume, output_path):
+    """回退到 edge-tts。"""
+    communicate = edge_tts.Communicate(
+        text=text, voice=voice, rate=rate, pitch=pitch, volume=volume
+    )
+    await communicate.save(str(output_path))
+
+
+def get_mp3_duration(mp3_path):
+    result = subprocess.run(
+        ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+         "-of", "default=noprint_wrappers=1:nokey=1", str(mp3_path)],
+        capture_output=True, text=True,
+    )
+    try:
+        return float(result.stdout.strip())
+    except ValueError:
+        return None
 
 
 def build_lines(story, config):
-    """
-    从 story.json 构建配音行列表。
-
-    编排策略：旁白和对白交替出现，互不重叠。
-    - 每页开头放旁白（介绍场景），时长控制在 1.5s 以内
-    - 旁白结束后放角色对白串行
-    - 如果一页内容太多，优先保留对白，旁白可省略
-    """
+    """从 story.json 构建配音行列表。"""
     roles = config["roles"]
-    emotion_map = config["emotion_map"]
     lines = []
     line_idx = 0
-
     pages = story["pages"]
 
     for page_idx, page in enumerate(pages):
@@ -121,40 +136,25 @@ def build_lines(story, config):
         # 估算旁白时长
         narrator_dur = 0.0
         if caption:
-            narrator_cfg = roles.get("旁白", {
-                "voice": "zh-CN-YunxiNeural",
-                "rate": "+0%", "pitch": "+0Hz", "volume": "+0%"
-            })
-            narrator_dur = estimate_duration(caption, narrator_cfg["rate"])
+            narrator_dur = max(1.0, len(caption) * 0.28)
 
         # 估算对白时长
         bubble_durs = []
         for bubble in bubbles:
-            speaker = bubble.get("speaker", "旁白")
-            emotion = bubble.get("emotion", "neutral")
             text = bubble.get("text", "")
-            role_cfg = roles.get(speaker, roles.get("旁白"))
-            emo_cfg = emotion_map.get(emotion, emotion_map["neutral"])
-            rate = combine_percent(role_cfg["rate"], emo_cfg["rate_offset"])
-            bubble_durs.append(estimate_duration(text, rate))
+            char_count = sum(1 for c in text if "\u4e00" <= c <= "\u9fff")
+            bubble_durs.append(max(1.0, char_count * 0.28))
 
         total_dialogue_dur = sum(bubble_durs) + max(0, len(bubbles) - 1) * 0.4
-
-        # 决策：旁白+对白+间隔 是否能在页面内放下
-        # 留 0.5s 开头缓冲 + 0.5s 结尾缓冲
         available_time = page_duration - 1.0
         need_time = narrator_dur + total_dialogue_dur + (0.4 if caption else 0.0)
         skip_narrator = need_time > available_time
 
         current_time = page_start + 0.3
 
-        # === 生成旁白 ===
+        # 生成旁白
         if caption and not skip_narrator:
-            narrator = roles.get("旁白", {
-                "voice": "zh-CN-YunxiNeural",
-                "rate": "+0%", "pitch": "+0Hz", "volume": "+0%"
-            })
-            emo = emotion_map.get("neutral", emotion_map["neutral"])
+            narrator = roles.get("旁白", {"voice": "zh-CN-YunxiNeural", "rate": "+0%", "pitch": "+0Hz", "volume": "+0%"})
             lines.append({
                 "id": line_idx,
                 "file": f"voice_{line_idx:03d}_narrator.mp3",
@@ -162,40 +162,24 @@ def build_lines(story, config):
                 "start": current_time,
                 "speaker": "旁白",
                 "voice": narrator["voice"],
-                "rate": combine_percent(narrator["rate"], emo["rate_offset"]),
-                "pitch": combine_hz(narrator["pitch"], emo["pitch_offset"]),
-                "volume": combine_percent(narrator["volume"], emo["volume_offset"]),
+                "rate": "+0%",
+                "pitch": "+0Hz",
+                "volume": "+0%",
                 "type": "narrator",
+                "dashscope": DASHSCOPE_PRESETS.get("旁白"),
             })
             line_idx += 1
             current_time += narrator_dur + 0.4
 
-        # === 生成对白 ===
+        # 生成对白
         for i, bubble in enumerate(bubbles):
             speaker = bubble.get("speaker", "旁白")
-            emotion = bubble.get("emotion", "neutral")
             text = bubble.get("text", "")
-
             if not text:
                 continue
 
             role_cfg = roles.get(speaker, roles.get("旁白"))
-            emo_cfg = emotion_map.get(emotion, emotion_map["neutral"])
-
-            rate = combine_percent(role_cfg["rate"], emo_cfg["rate_offset"])
-            pitch = combine_hz(role_cfg["pitch"], emo_cfg["pitch_offset"])
-            volume = combine_percent(role_cfg["volume"], emo_cfg["volume_offset"])
-
-            if bubble.get("tone") == "robot":
-                rate = combine_percent(rate, "+5%")
-                pitch = combine_hz(pitch, "+5Hz")
-            elif bubble.get("tone") == "star":
-                rate = combine_percent(rate, "-3%")
-                pitch = combine_hz(pitch, "+5Hz")
-                volume = combine_percent(volume, "-3%")
-
             dur = bubble_durs[i]
-            # 确保不超出页面结束时间（留 0.5s 边距）
             if current_time + dur > page_end - 0.5:
                 break
 
@@ -206,10 +190,11 @@ def build_lines(story, config):
                 "start": current_time,
                 "speaker": speaker,
                 "voice": role_cfg["voice"],
-                "rate": rate,
-                "pitch": pitch,
-                "volume": volume,
+                "rate": role_cfg.get("rate", "+0%"),
+                "pitch": role_cfg.get("pitch", "+0Hz"),
+                "volume": role_cfg.get("volume", "+0%"),
                 "type": "dialogue",
+                "dashscope": DASHSCOPE_PRESETS.get(speaker),
             })
             line_idx += 1
             current_time += dur + 0.4
@@ -218,37 +203,43 @@ def build_lines(story, config):
 
 
 async def generate_voice(line):
-    """使用 edge-tts 生成单条语音。"""
+    """生成单条语音，优先 DashScope，失败回退 edge-tts。"""
     out = AUDIO_DIR / line["file"]
-    communicate = edge_tts.Communicate(
-        text=line["text"],
-        voice=line["voice"],
-        rate=line["rate"],
-        pitch=line["pitch"],
-        volume=line["volume"],
+
+    # 尝试 DashScope
+    if DASHSCOPE_API_KEY and line.get("dashscope"):
+        cfg = line["dashscope"]
+        print(f"  DashScope: {line['speaker']} - {line['text'][:15]}... (model={cfg['model']})")
+        if generate_with_dashscope(line["text"], cfg["model"], out):
+            print(f"    ✅ 成功")
+            return
+        print(f"    ⚠️ 回退到 edge-tts")
+
+    # 回退到 edge-tts
+    cfg = EDGE_VOICE_MAP.get(line["speaker"], EDGE_VOICE_MAP["旁白"])
+    await generate_with_edgetts(
+        line["text"], cfg["voice"], cfg["rate"], cfg["pitch"], cfg["volume"], out
     )
-    await communicate.save(str(out))
-    print(f"  ✓ {line['file']} — {line['speaker']}: {line['text'][:20]}... [rate={line['rate']} pitch={line['pitch']} vol={line['volume']}]")
+    print(f"  edge-tts: {line['speaker']} - {line['text'][:15]}...")
 
 
 async def generate_all_voices(lines):
     """并发生成所有语音文件。"""
-    print(f"Generating {len(lines)} voice lines...")
+    print(f"生成 {len(lines)} 条语音...")
     await asyncio.gather(*(generate_voice(line) for line in lines))
-    print("All voices generated.")
+    print("全部语音生成完成。")
 
 
 def mix_dialogue(lines):
-    """将所有语音文件按时间轴混音为一条 dialogue 轨道。"""
+    """将所有语音文件按时间轴混音。"""
     if not lines:
-        return AUDIO_DIR / "dialogue_edge.wav"
+        return AUDIO_DIR / "dialogue_dashscope.wav"
 
     voice_inputs = []
     filters = []
     for i, line in enumerate(lines):
         voice_inputs.extend(["-i", str(AUDIO_DIR / line["file"])])
         delay = round(line["start"] * 1000)
-        # 对白音量稍大，旁白稍小
         vol = 1.25 if line["type"] == "dialogue" else 1.0
         filters.append(f"[{i}:a]adelay={delay}|{delay},volume={vol}[v{i}]")
 
@@ -258,7 +249,7 @@ def mix_dialogue(lines):
         "aresample=48000[dialogue]"
     )
 
-    dialogue = AUDIO_DIR / "dialogue_edge.wav"
+    dialogue = AUDIO_DIR / "dialogue_dashscope.wav"
     run([
         "ffmpeg", "-y",
         *voice_inputs,
@@ -367,71 +358,51 @@ def final_mix(dialogue, bgm, sfx):
 
 async def main():
     print("=" * 50)
-    print("Comic Book Studio — 多角色情感配音生成器")
+    print("Comic Book Studio — DashScope TTS 配音生成器")
     print("=" * 50)
+
+    if not DASHSCOPE_API_KEY:
+        print("[WARNING] DASHSCOPE_API_KEY 未设置，将使用 edge-tts")
+        print("获取 Key: https://dashscope.console.aliyun.com/")
+    else:
+        print(f"[INFO] DashScope API Key 已设置: {DASHSCOPE_API_KEY[:12]}...")
 
     # 1. 加载配置
     story, config = load_story_and_config()
-    print(f"Loaded story: {story['title']} ({len(story['pages'])} pages)")
+    print(f"加载故事: {story['title']} ({len(story['pages'])} 页)")
 
     # 2. 构建配音行
     lines = build_lines(story, config)
-    print(f"Total voice lines: {len(lines)}")
-    for line in lines:
-        print(f"  [{line['start']:6.2f}s] {line['speaker']:6s} : {line['text'][:30]}... [voice={line['voice']}, rate={line['rate']}, pitch={line['pitch']}]")
+    print(f"总配音行数: {len(lines)}")
 
     # 3. 生成语音
     await generate_all_voices(lines)
 
     # 4. 混音 dialogue
-    print("\nMixing dialogue track...")
+    print("\n混音对白轨道...")
     dialogue = mix_dialogue(lines)
 
     # 5. 生成 SFX
-    print("Generating SFX...")
+    print("生成音效...")
     flip = generate_page_flip_sfx()
-    # 翻页时间点 = 每页结束时间 - transitionDuration（最后一页不翻页）
     transition_dur = story.get("transitionDuration", 0.9)
     flip_times = [page["end"] - transition_dur for page in story["pages"][:-1]]
-    print(f"  Page flip times: {flip_times}")
+    print(f"  翻页时间点: {flip_times}")
     sfx = mix_sfx(flip, flip_times)
 
     # 6. 生成 BGM
-    print("Generating BGM...")
+    print("生成 BGM...")
     bgm = generate_bgm(story.get("totalDuration", 32))
 
     # 7. 最终混音
-    print("Final mix...")
+    print("最终混音...")
     mixed = final_mix(dialogue, bgm, sfx)
 
-    # 8. 保存清单
-    manifest = {
-        "tts": "edge-tts",
-        "ssml": False,
-        "note": "edge-tts auto-escapes SSML tags, so mstts:express-as is not supported. Emotion is simulated via rate/pitch/volume.",
-        "lines": [
-            {
-                "id": line["id"],
-                "speaker": line["speaker"],
-                "text": line["text"],
-                "start": line["start"],
-                "voice": line["voice"],
-                "rate": line["rate"],
-                "pitch": line["pitch"],
-                "volume": line["volume"],
-                "type": line["type"],
-            }
-            for line in lines
-        ],
-    }
-    (AUDIO_DIR / "edge_manifest.json").write_text(
-        json.dumps(manifest, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
-
+    # 8. 统计
+    total_chars = sum(len(line["text"]) for line in lines)
     print(f"\n{'=' * 50}")
-    print(f"Audio written to: {mixed}")
-    print(f"Manifest: {AUDIO_DIR / 'edge_manifest.json'}")
+    print(f"音频输出: {mixed}")
+    print(f"本次使用字符数: {total_chars}")
     print(f"{'=' * 50}")
 
 

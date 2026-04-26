@@ -7,9 +7,12 @@ import puppeteer from 'puppeteer';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const root = __dirname;
-const story = JSON.parse(fs.readFileSync(path.join(root, 'story.json'), 'utf8'));
-const framesDir = path.join(root, 'frames');
-const outputDir = path.join(root, 'output');
+const episodeArg = process.argv.find((arg) => arg.startsWith('--episode='));
+const episode = episodeArg ? episodeArg.slice('--episode='.length) : '';
+const episodeRoot = episode ? path.join(root, episode) : root;
+const story = JSON.parse(fs.readFileSync(path.join(episodeRoot, 'story.json'), 'utf8'));
+const framesDir = path.join(episodeRoot, 'frames');
+const outputDir = path.join(episodeRoot, 'output');
 const threeBuildDir = path.dirname(fileURLToPath(import.meta.resolve('three')));
 const port = 8877;
 const sampleArg = process.argv.find((arg) => arg.startsWith('--sample='));
@@ -64,12 +67,25 @@ const server = http.createServer((req, res) => {
   }
 
   const safeReq = reqPath === '/' ? '/render.html' : reqPath;
-  const filePath = path.normalize(path.join(root, safeReq));
-  const rel = path.relative(root, filePath);
-  if (rel.startsWith('..') || path.isAbsolute(rel)) {
-    res.writeHead(403);
-    res.end('Forbidden');
-    return;
+
+  // Episode 优先：如果指定了 episode，先尝试从 episode 目录查找文件
+  let filePath;
+  if (episode && (safeReq === '/story.json' || safeReq === '/voice_config.json' || safeReq.startsWith('/assets/'))) {
+    const episodeFile = path.normalize(path.join(episodeRoot, safeReq));
+    const episodeRel = path.relative(episodeRoot, episodeFile);
+    if (!episodeRel.startsWith('..') && !path.isAbsolute(episodeRel) && fs.existsSync(episodeFile)) {
+      filePath = episodeFile;
+    }
+  }
+
+  if (!filePath) {
+    filePath = path.normalize(path.join(root, safeReq));
+    const rel = path.relative(root, filePath);
+    if (rel.startsWith('..') || path.isAbsolute(rel)) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
   }
   serveFile(filePath, res);
 });
@@ -85,7 +101,7 @@ function closeServer() {
 if (sampleTimes) {
   fs.mkdirSync(outputDir, { recursive: true });
 } else {
-  cleanFrames();
+  fs.mkdirSync(framesDir, { recursive: true });
 }
 await listen();
 console.log(`Render server: http://127.0.0.1:${port}/render.html`);
@@ -112,16 +128,35 @@ try {
     }
   } else {
     const totalFrames = Math.ceil(story.totalDuration * story.fps);
+
+    // 断点续传：检查已渲染的帧
+    let startFrame = 0;
+    const existing = fs.existsSync(framesDir)
+      ? fs.readdirSync(framesDir)
+          .filter((f) => f.startsWith('frame_') && f.endsWith('.png'))
+          .map((f) => parseInt(f.slice(6, 11), 10))
+          .sort((a, b) => a - b)
+      : [];
+    if (existing.length > 0) {
+      const last = existing[existing.length - 1];
+      if (last >= totalFrames) {
+        console.log(`All ${totalFrames} frames already rendered.`);
+      } else {
+        startFrame = last;
+        console.log(`Resuming from frame ${startFrame + 1}/${totalFrames}`);
+      }
+    }
+
     const start = Date.now();
-    for (let frame = 0; frame < totalFrames; frame++) {
+    for (let frame = startFrame; frame < totalFrames; frame++) {
       const t = frame / story.fps;
       await page.evaluate((time) => window.renderFrame(time), t);
       const framePath = path.join(framesDir, `frame_${String(frame + 1).padStart(5, '0')}.png`);
       await page.screenshot({ path: framePath, type: 'png' });
 
-      if (frame === 0 || (frame + 1) % story.fps === 0 || frame + 1 === totalFrames) {
+      if (frame === startFrame || (frame + 1) % story.fps === 0 || frame + 1 === totalFrames) {
         const elapsed = (Date.now() - start) / 1000;
-        const fps = (frame + 1) / Math.max(elapsed, 0.001);
+        const fps = (frame + 1 - startFrame) / Math.max(elapsed, 0.001);
         const pct = (((frame + 1) / totalFrames) * 100).toFixed(1);
         process.stdout.write(`\rframes ${frame + 1}/${totalFrames} ${pct}% renderFps=${fps.toFixed(1)}`);
       }

@@ -1,0 +1,31 @@
+{
+  "roles": {
+    "夸父": {
+      "voice": "zh-CN-YunxiNeural",
+      "rate": "-10%",
+      "pitch": "-6Hz",
+      "volume": "+10%",
+      "description": "浑厚低沉男声，巨人感"
+    },
+    "旁白": {
+      "voice": "zh-CN-YunjianNeural",
+      "rate": "+0%",
+      "pitch": "+0Hz",
+      "volume": "+5%",
+      "description": "沉稳叙事男声"
+    }
+  },
+  "emotion_map": {
+    "neutral":    { "rate_offset": "+0%",  "pitch_offset": "+0Hz",  "volume_offset": "+0%" },
+    "determined": { "rate_offset": "+0%",  "pitch_offset": "+2Hz",  "volume_offset": "+5%" },
+    "heroic":     { "rate_offset": "+5%",  "pitch_offset": "+4Hz",  "volume_offset": "+15%" },
+    "dramatic":   { "rate_offset": "+5%",  "pitch_offset": "+2Hz",  "volume_offset": "+10%" },
+    "strained":   { "rate_offset": "+15%", "pitch_offset": "+0Hz",  "volume_offset": "+5%" },
+    "desperate":  { "rate_offset": "+20%", "pitch_offset": "+6Hz",  "volume_offset": "+8%" },
+    "anguished":  { "rate_offset": "+10%", "pitch_offset": "-2Hz",  "volume_offset": "+5%" },
+    "fading":     { "rate_offset": "-20%", "pitch_offset": "-8Hz",  "volume_offset": "-10%" },
+    "peaceful":   { "rate_offset": "-15%", "pitch_offset": "-4Hz",  "volume_offset": "-5%" },
+    "gentle":     { "rate_offset": "-10%", "pitch_offset": "-2Hz",  "volume_offset": "-5%" },
+    "reverent":   { "rate_offset": "-5%",  "pitch_offset": "+0Hz",  "volume_offset": "+5%" }
+  }
+}
